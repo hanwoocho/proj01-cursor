@@ -1,0 +1,53 @@
+<div class="page-header">
+  <div>
+    <h1>회원 목록</h1>
+    <p class="subtitle">등록된 회원을 확인하고 관리합니다</p>
+  </div>
+  <div class="header-actions">
+    <%= link_to "채팅방으로", rooms_path, class: "btn btn-secondary btn-sm" %>
+    <span class="user-badge"><%= current_user.username %></span>
+    <%= button_to "로그아웃", logout_path, method: :delete, class: "btn btn-secondary btn-sm" %>
+  </div>
+</div>
+
+<div class="admin-users-layout">
+  <% if @users.any? %>
+    <table class="user-table">
+      <thead>
+        <tr>
+          <th>아이디</th>
+          <th>가입일</th>
+          <th>관리</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @users.each do |user| %>
+          <tr>
+            <td>
+              <%= user.username %>
+              <% if user.admin? %>
+                <span class="admin-badge">관리자</span>
+              <% end %>
+            </td>
+            <td><%= user.created_at.strftime("%Y-%m-%d %H:%M") %></td>
+            <td>
+              <% if user == current_user %>
+                <span class="text-muted">본인</span>
+              <% elsif user.admin? && User.where(admin: true).count <= 1 %>
+                <span class="text-muted">삭제 불가</span>
+              <% else %>
+                <%= button_to "삭제",
+                    admin_user_path(user),
+                    method: :delete,
+                    class: "btn btn-danger btn-sm",
+                    data: { turbo_confirm: "#{user.username} 회원을 삭제하시겠습니까?" } %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <p class="empty-state">등록된 회원이 없습니다.</p>
+  <% end %>
+</div>

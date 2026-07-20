@@ -1,0 +1,42 @@
+<%= turbo_stream_from @room %>
+
+<div class="chat-page">
+  <header class="chat-header">
+    <div class="chat-header-left">
+      <%= link_to "← 방 목록", rooms_path, class: "back-link" %>
+      <div>
+        <h1># <%= @room.name %></h1>
+        <% if @room.description.present? %>
+          <p class="subtitle"><%= @room.description %></p>
+        <% end %>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span class="user-badge"><%= current_user.username %></span>
+      <%= button_to "로그아웃", logout_path, method: :delete, class: "btn btn-secondary btn-sm" %>
+    </div>
+  </header>
+
+  <div class="chat-main">
+    <div id="messages" class="messages-container">
+      <%= render @messages %>
+    </div>
+
+    <div class="message-input-area">
+      <%= render "messages/form", room: @room, message: @message %>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("turbo:load", () => {
+    const container = document.getElementById("messages");
+    if (container) container.scrollTop = container.scrollHeight;
+  });
+  document.addEventListener("turbo:before-stream-render", () => {
+    requestAnimationFrame(() => {
+      const container = document.getElementById("messages");
+      if (container) container.scrollTop = container.scrollHeight;
+    });
+  });
+</script>

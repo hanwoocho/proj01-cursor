@@ -1,0 +1,63 @@
+<div class="page-header">
+  <div>
+    <h1>채팅방</h1>
+    <p class="subtitle">참여할 채팅방을 선택하거나 새로 만드세요</p>
+  </div>
+  <div class="header-actions">
+    <% if admin? %>
+      <%= link_to "회원목록", admin_users_path, class: "btn btn-secondary btn-sm" %>
+    <% end %>
+    <span class="user-badge"><%= current_user.username %></span>
+    <%= button_to "로그아웃", logout_path, method: :delete, class: "btn btn-secondary btn-sm" %>
+  </div>
+</div>
+
+<div class="rooms-layout">
+  <aside class="rooms-sidebar">
+    <h2>방 목록</h2>
+    <ul class="room-list">
+      <% @rooms.each do |room| %>
+        <li>
+          <%= link_to room_path(room), class: "room-item" do %>
+            <span class="room-name"># <%= room.name %></span>
+            <% if room.description.present? %>
+              <span class="room-desc"><%= truncate(room.description, length: 40) %></span>
+            <% end %>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+
+    <% if @rooms.empty? %>
+      <p class="empty-state">아직 채팅방이 없습니다. 아래에서 만들어 보세요.</p>
+    <% end %>
+  </aside>
+
+  <section class="rooms-create">
+    <h2>새 채팅방 만들기</h2>
+
+    <%= form_with model: @room, url: rooms_path, class: "room-form" do |f| %>
+      <% if @room.errors.any? %>
+        <div class="alert alert-error">
+          <ul>
+            <% @room.errors.full_messages.each do |msg| %>
+              <li><%= msg %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+
+      <div class="field">
+        <%= f.label :name, "방 이름" %>
+        <%= f.text_field :name, required: true, placeholder: "general, random, dev..." %>
+      </div>
+
+      <div class="field">
+        <%= f.label :description, "설명 (선택)" %>
+        <%= f.text_area :description, rows: 3, placeholder: "이 방은 무엇에 대한 이야기인가요?" %>
+      </div>
+
+      <%= f.submit "채팅방 만들기", class: "btn btn-primary" %>
+    <% end %>
+  </section>
+</div>

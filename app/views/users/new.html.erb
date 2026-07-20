@@ -1,0 +1,39 @@
+<div class="auth-container">
+  <div class="auth-card">
+    <h1>회원가입</h1>
+    <p class="subtitle">새 계정을 만들어 채팅을 시작하세요</p>
+
+    <%= form_with model: @user, url: signup_path, class: "auth-form" do |f| %>
+      <% if @user.errors.any? %>
+        <div class="alert alert-error">
+          <ul>
+            <% @user.errors.full_messages.each do |msg| %>
+              <li><%= msg %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+
+      <div class="field">
+        <%= f.label :username, "아이디" %>
+        <%= f.text_field :username, required: true, autofocus: true, placeholder: "영문, 숫자, 밑줄 (2~30자)" %>
+      </div>
+
+      <div class="field">
+        <%= f.label :password, "비밀번호" %>
+        <%= f.password_field :password, required: true, placeholder: "4자 이상" %>
+      </div>
+
+      <div class="field">
+        <%= f.label :password_confirmation, "비밀번호 확인" %>
+        <%= f.password_field :password_confirmation, required: true, placeholder: "비밀번호 재입력" %>
+      </div>
+
+      <%= f.submit "가입하기", class: "btn btn-primary btn-block" %>
+    <% end %>
+
+    <p class="auth-footer">
+      이미 계정이 있으신가요? <%= link_to "로그인", login_path %>
+    </p>
+  </div>
+</div>

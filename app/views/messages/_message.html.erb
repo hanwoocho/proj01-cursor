@@ -1,0 +1,9 @@
+<div id="<%= dom_id(message) %>" class="message">
+  <div class="message-meta">
+    <span class="message-author"><%= message.user.username %></span>
+    <time class="message-time" datetime="<%= message.created_at.iso8601 %>">
+      <%= message.created_at.strftime("%H:%M") %>
+    </time>
+  </div>
+  <div class="message-body"><%= simple_format(h(message.body)) %></div>
+</div>

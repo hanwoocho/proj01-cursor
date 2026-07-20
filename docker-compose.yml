@@ -1,0 +1,20 @@
+# App server on this machine; PostgreSQL runs on DB PC (set DB_HOST in .env).
+#
+# Usage:
+#   cp .env.example .env
+#   # Edit .env: DB_HOST = DB PC LAN IP, RAILS_MASTER_KEY, DB_PASSWORD, APP_HOST, ALLOWED_ORIGINS
+#   docker compose up --build -d
+#
+services:
+  web:
+    build: .
+    ports:
+      - "${APP_PORT:-3001}:80"
+    env_file:
+      - .env
+    environment:
+      RAILS_ENV: production
+      SOLID_QUEUE_IN_PUMA: "${SOLID_QUEUE_IN_PUMA:-true}"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped

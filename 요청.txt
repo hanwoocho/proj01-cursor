@@ -1,0 +1,19 @@
+
+Ruby on Rails로 채팅 프로그램 만들어줘 
+필요한 디렉토리 소스 database table 직접 만들어줘 
+=========== DB information =================================
+host        : localhost
+driver name : PostgreSQL
+driver type : PostgreSQL
+class name  : org.postgresql.Driver
+URL Template : jdbc:postgresql://{host}[:{port}]/[{database}]
+URL          :	jdbc:postgresql://localhost:5432/postgres   
+port : 5432
+database : chat-cursor
+user     : postgres 
+user password : 2341 
+
+
+C:\ai\chat\proj01-cursor 이 잘돌아가는 프로젝트에 다음을 추가해줘 
+1. admin 으로 로그인 하면 메인화면에 회원목록 버튼 추가해주고  
+2. 회원목록 크릭하면 회원리스트 보여주고 각 리스트에 회원 삭제하는 버튼도 달아줘 

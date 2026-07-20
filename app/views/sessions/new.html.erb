@@ -1,0 +1,24 @@
+<div class="auth-container">
+  <div class="auth-card">
+    <h1>채팅 로그인</h1>
+    <p class="subtitle">Chat Cursor에 오신 것을 환영합니다</p>
+
+    <%= form_with url: login_path, class: "auth-form" do |f| %>
+      <div class="field">
+        <%= label_tag :username, "아이디" %>
+        <%= text_field_tag :username, params[:username], required: true, autofocus: true, placeholder: "username" %>
+      </div>
+
+      <div class="field">
+        <%= label_tag :password, "비밀번호" %>
+        <%= password_field_tag :password, nil, required: true, placeholder: "••••••••" %>
+      </div>
+
+      <%= submit_tag "로그인", class: "btn btn-primary btn-block" %>
+    <% end %>
+
+    <p class="auth-footer">
+      계정이 없으신가요? <%= link_to "회원가입", signup_path %>
+    </p>
+  </div>
+</div>

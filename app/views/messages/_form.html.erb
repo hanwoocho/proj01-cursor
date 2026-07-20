@@ -1,0 +1,14 @@
+<div id="message_form">
+  <%= form_with model: [ room, message ], class: "message-form", data: { turbo: true } do |f| %>
+    <% if message.errors.any? %>
+      <div class="alert alert-error">
+        <%= message.errors.full_messages.join(", ") %>
+      </div>
+    <% end %>
+
+    <div class="message-input-row">
+      <%= f.text_field :body, required: true, placeholder: "메시지를 입력하세요...", autocomplete: "off", class: "message-input" %>
+      <%= f.submit "전송", class: "btn btn-primary" %>
+    </div>
+  <% end %>
+</div>
