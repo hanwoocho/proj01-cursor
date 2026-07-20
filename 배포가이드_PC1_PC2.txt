@@ -1,0 +1,183 @@
+================================================================
+ proj01-cursor — 배포 구성 및 명령어 정리
+================================================================
+
+[역할 / IP]
+  PC1 (DB 서버)    : 10.178.187.65   PostgreSQL (chat-cursor, _cache, _queue, _cable)
+  PC2 (앱 서버)    : 10.178.187.220  Docker 컨테이너 (Rails 앱, 3001 -> 80)
+  GitHub           : https://github.com/hanwoocho/proj01-cursor  (소스 저장소)
+  흐름             : PC2 가 GitHub 에서 clone -> docker compose up -> PC1 PostgreSQL 접속
+
+[핵심 매핑]
+  DB_HOST        = 10.178.187.65          (PC1)
+  APP_HOST       = 10.178.187.220:3001    (PC2, localhost 도 함께 허용)
+  ALLOWED_ORIGINS= http://10.178.187.220:3001
+  RAILS_MASTER_KEY = config/master.key 내용 (= e5d97446840d22881352114a036d0cec)
+
+
+================================================================
+ 1. 프로젝트 구조 (주요 파일)
+================================================================
+
+proj01-cursor/
+├─ Dockerfile                  # production 이미지 빌드 정의 (ruby:4.0.5-slim)
+├─ docker-compose.yml          # web 서비스 (ports 3001:80, env_file .env)
+├─ .env.example                # 환경변수 템플릿 (커밋됨, DB_HOST/APP_HOST 세팅됨)
+├─ .env                        # 실제 환경변수 (gitignore, PC2 에서 생성)
+├─ .gitignore / .dockerignore  # 비밀(.env, master.key) 및 불필요 파일 제외
+├─ README.md                   # 배포 문서
+├─ Gemfile / Gemfile.lock
+├─ config/
+│  ├─ database.yml             # multi-DB (primary / cache / queue / cable) — env 기반
+│  ├─ environments/
+│  │  └─ production.rb         # APP_HOST 콤마 구분 다중호스트, ALLOWED_ORIGINS,
+│  │                           #   solid_cache / solid_queue 어댑터, host_authorization
+│  ├─ master.key               # Rails credentials 키 (gitignore — RAILS_MASTER_KEY 로 주입)
+│  ├─ credentials.yml.enc      # 암호화된 credentials (커밋됨)
+│  ├─ puma.rb / cable.yml ...
+├─ bin/
+│  ├─ docker-entrypoint        # 컨테이너 기동 시 `rails db:prepare` 실행
+│  └─ rails, rake, thrust ...
+├─ db/
+│  ├─ migrate/                 # 마이그레이션
+│  ├─ schema.rb, cache_schema.rb, queue_schema.rb, cable_schema.rb
+│  └─ setup_production_databases.sql  # cache/queue/cable DB 생성 (PC1 에서 1회 실행)
+├─ app/                        # Rails 앱 (controllers / views / models / javascript)
+│  ├─ controllers/admin/users_controller.rb   # 관리자 회원목록+삭제
+│  └─ ...
+└─ public/ storage/ tmp/ log/ vendor/ ...
+
+
+================================================================
+ 2. PC1 (DB 서버, 10.178.187.65) — 한 번만 하는 설정
+================================================================
+
+(1) PostgreSQL 설치, 서비스 자동 시작 권장
+    # 관리자 PowerShell
+    Get-Service *postgres*                          # 서비스명 확인 (예: postgresql-x64-17)
+    Set-Service -Name postgresql-x64-17 -StartupType Automatic
+
+(2) postgresql.conf
+    listen_addresses = '*'
+
+(3) pg_hba.conf  맨 아래 추가 (PC2 허용)
+    host  all  all  10.178.187.220/32  scram-sha-256
+    # 테스트용 전체 허용:  host  all  all  0.0.0.0/0  scram-sha-256
+
+(4) PostgreSQL 재시작 + Windows 방화벽 5432(TCP) 인바운드 허용
+
+(5) cache/queue/c cable DB 생성 (1회)
+    psql -U postgres -f db/setup_production_databases.sql
+
+[PC1 재기동 후]
+    net start postgresql-x64-17        # (자동시작이면 불필요)
+    # 다른 PC(PC2)에서 확인:  Test-NetConnection 10.178.187.65 -Port 5432
+
+
+================================================================
+ 3. GitHub (hanwoocho/proj01-cursor)
+================================================================
+
+# 최초 원격 등록 (한 번)
+git remote add origin https://github.com/hanwoocho/proj01-cursor.git
+git push -u origin main
+
+# 이후 push
+git push origin main
+
+# 비밀 파일은 커밋에서 제외됨 (.gitignore)
+#   .env, config/master.key  -> 절대 커밋되지 않음
+#   .env.example, config/credentials.yml.enc -> 커밋됨 (템플릿/암호화본)
+
+
+================================================================
+ 4. Docker (빌드 개념)
+================================================================
+
+- 빌드 대상: Dockerfile (production), docker-compose.yml (web 서비스)
+- 받고 만든 파일 위치:
+    베이스 이미지 / 앱 이미지 / gem(/usr/local/bundle) / 에셋
+    -> 모두 Docker 내부 저장소 (Windows: C:\Users\...\AppData\Local\Docker\wsl\... ext4.vhdx)
+    -> 프로젝트 폴더(C:\ai\chat\proj01-cursor)에는 저장되지 않음
+- env 는 런타임에 .env 로 주입 (빌드 시점 아님)
+- 코드(.rb) 나 .env 를 고치면 이미지 재빌드 필요:  --build
+
+
+================================================================
+ 5. PC2 (앱 서버 / 클론, 10.178.187.220)
+================================================================
+
+# 사전: Docker Desktop + Git 설치/실행
+
+# (1) clone
+git clone https://github.com/hanwoocho/proj01-cursor.git
+cd proj01-cursor
+
+# (2) env 준비
+cp .env.example .env
+notepad .env                 # RAILS_MASTER_KEY, DB_PASSWORD 만 채우면 됨
+                             # (DB_HOST=10.178.187.65, APP_HOST/ALLOWED_ORIGINS 는 예제에 세팅됨)
+
+# (3) 빌드 + 실행  (production.rb 등 코드 변경 시 --build 필수)
+docker compose up --build -d
+
+# (4) 로그
+docker compose logs -f web
+
+# (5) 헬스체크
+curl http://localhost:3001/up
+
+# 접속
+#   같은 PC:   http://localhost:3001
+#   다른 PC:   http://10.178.187.220:3001
+
+# 재시작 / 종료
+docker compose restart
+docker compose down
+
+# 이미지/공간 정리
+docker system df
+docker system prune -a       # 주의: 재빌드 필요
+
+
+================================================================
+ 6. PC2 의 .env 최종 예시
+================================================================
+
+DB_HOST=10.178.187.65
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=2341
+DB_NAME=chat-cursor
+DB_CACHE_NAME=chat-cursor_cache
+DB_QUEUE_NAME=chat-cursor_queue
+DB_CABLE_NAME=chat-cursor_cable
+DB_TEST_NAME=chat-cursor_test
+RAILS_MASTER_KEY=e5d97446840d22881352114a036d0cec
+APP_HOST=localhost:3001,10.178.187.220:3001
+ALLOWED_ORIGINS=http://localhost:3001,http://10.178.187.220:3001
+APP_PORT=3001
+SOLID_QUEUE_IN_PUMA=true
+
+
+================================================================
+ 7. 문제 해결
+================================================================
+
+[secret_key_base 에러 / 컨테이너 재시작 루프]
+  -> PC2 .env 에 RAILS_MASTER_KEY 누락. config/master.key 내용을 그대로 복사.
+
+[DB 연결 실패]
+  -> PC1 방화벽 5432, pg_hba.conf(PC2 IP 허용), .env 의 DB_HOST(10.178.187.65)/DB_PASSWORD 확인.
+  -> cache/queue/cable DB 가 생성됐는지 확인 (PC1 에서 setup_production_databases.sql).
+
+[Blocked host]
+  -> APP_HOST 에 실제 접속 주소(IP:포트)가 포함돼야 함.
+
+[실시간 채팅 안 됨]
+  -> ALLOWED_ORIGINS 에 브라우저 URL(http://IP:3001)이 포함돼야 함.
+
+[DB 서버(PC1) 재기동 후]
+  -> PC1 에서 PostgreSQL 서비스만 시작하면 됨 (설정/방화벽은 영구 적용).
+     net start postgresql-x64-17   (자동시작 권장)
+  -> PC2 앱은 다음 요청에 자동 재연결 — PC2 에서 할 일 없음.
