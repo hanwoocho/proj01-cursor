@@ -15,6 +15,4 @@ services:
     environment:
       RAILS_ENV: production
       SOLID_QUEUE_IN_PUMA: "${SOLID_QUEUE_IN_PUMA:-true}"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     restart: unless-stopped

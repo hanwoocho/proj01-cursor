@@ -54,7 +54,7 @@ cp .env.example .env
 `.env` 예시:
 
 ```env
-DB_HOST=192.168.0.10          # DB PC의 LAN IP
+DB_HOST=10.178.187.65          # DB PC의 LAN IP
 DB_PORT=5432
 DB_USER=postgres
 DB_PASSWORD=your_password
