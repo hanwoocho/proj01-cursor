@@ -57,7 +57,7 @@ Rails.application.configure do
   # Set this to true and configure the email server for immediate delivery to raise delivery errors.
   # config.action_mailer.raise_delivery_errors = false
 
-  app_host = ENV.fetch("APP_HOST", "localhost")
+  app_host = ENV.fetch("APP_HOST", "localhost").split(",").first.to_s.strip
   app_host_name, _, app_host_port = app_host.rpartition(":")
   mailer_host = app_host_name.presence || app_host
   mailer_port = app_host_port.presence
@@ -87,8 +87,11 @@ Rails.application.configure do
   config.active_record.attributes_for_inspect = [ :id ]
 
   if ENV["APP_HOST"].present?
-    config.hosts << app_host
-    config.hosts << app_host_name if app_host_name.present? && app_host_name != app_host
+    ENV["APP_HOST"].split(",").map(&:strip).each do |host|
+      config.hosts << host
+      host_name, _, _ = host.rpartition(":")
+      config.hosts << host_name if host_name.present? && host_name != host
+    end
   end
 
   if ENV["ALLOWED_ORIGINS"].present?
